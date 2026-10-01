@@ -2219,8 +2219,28 @@ fn sleep_until_next_android_poll(next_poll_at: &mut Instant, interval: Duration)
     }
 }
 
+pub(crate) async fn create_video_source(
+    state: &AppState,
+    udid: &str,
+) -> Result<WebRtcVideoSource, AppError> {
+    if android::is_android_id(udid) {
+        return Ok(WebRtcVideoSource::Android(
+            AndroidWebRtcSource::start(
+                state.android.clone(),
+                state.metrics.clone(),
+                udid.to_owned(),
+                android_h264_config_from_payload(None)?,
+            )
+            .await?,
+        ));
+    }
+    let session = state.registry.get_or_create_async(udid).await?;
+    session.ensure_started_async().await?;
+    Ok(WebRtcVideoSource::Simulator(session))
+}
+
 #[derive(Clone)]
-enum WebRtcVideoSource {
+pub(crate) enum WebRtcVideoSource {
     Simulator(crate::simulators::session::SimulatorSession),
     Android(AndroidWebRtcSource),
 }
@@ -2230,48 +2250,51 @@ impl WebRtcVideoSource {
         false
     }
 
-    fn subscribe(&self) -> WebRtcFrameReceiver {
+    pub(crate) fn subscribe(&self) -> WebRtcFrameReceiver {
         match self {
             Self::Simulator(session) => WebRtcFrameReceiver::Simulator(session.subscribe()),
             Self::Android(source) => WebRtcFrameReceiver::Android(source.subscribe()),
         }
     }
 
-    async fn wait_for_keyframe(&self, timeout_duration: Duration) -> Option<SharedFrame> {
+    pub(crate) async fn wait_for_keyframe(
+        &self,
+        timeout_duration: Duration,
+    ) -> Option<SharedFrame> {
         match self {
             Self::Simulator(session) => session.wait_for_keyframe(timeout_duration).await,
             Self::Android(source) => source.wait_for_keyframe(timeout_duration).await,
         }
     }
 
-    fn request_refresh(&self) {
+    pub(crate) fn request_refresh(&self) {
         match self {
             Self::Simulator(session) => session.request_refresh(),
             Self::Android(source) => source.request_refresh(),
         }
     }
 
-    fn request_keyframe(&self) {
+    pub(crate) fn request_keyframe(&self) {
         match self {
             Self::Simulator(session) => session.request_keyframe(),
             Self::Android(source) => source.request_keyframe(),
         }
     }
 
-    fn set_client_foreground(&self, foreground: bool) {
+    pub(crate) fn set_client_foreground(&self, foreground: bool) {
         if let Self::Simulator(session) = self {
             session.set_client_foreground(foreground);
         }
     }
 }
 
-enum WebRtcFrameReceiver {
+pub(crate) enum WebRtcFrameReceiver {
     Simulator(crate::simulators::session::FrameSubscription),
     Android(broadcast::Receiver<SharedFrame>),
 }
 
 impl WebRtcFrameReceiver {
-    async fn recv(&mut self) -> Result<SharedFrame, broadcast::error::RecvError> {
+    pub(crate) async fn recv(&mut self) -> Result<SharedFrame, broadcast::error::RecvError> {
         match self {
             Self::Simulator(receiver) => receiver.recv().await,
             Self::Android(receiver) => receiver.recv().await,
@@ -2279,7 +2302,7 @@ impl WebRtcFrameReceiver {
     }
 }
 
-async fn wait_for_h264_sync_keyframe(
+pub(crate) async fn wait_for_h264_sync_keyframe(
     source: &WebRtcVideoSource,
     timeout_duration: Duration,
 ) -> Option<SharedFrame> {

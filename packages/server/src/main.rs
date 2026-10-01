@@ -6109,6 +6109,19 @@ async fn serve(
         android: Default::default(),
     };
     start_simulator_session_idle_reaper(state.registry.clone());
+    if std::env::var("SIMDECK_ENABLE_WEBTRANSPORT")
+        .ok()
+        .is_some_and(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes"
+            )
+        })
+    {
+        if let Err(error) = transport::webtransport::start(state.clone()).await {
+            warn!("WebTransport fallback disabled: {error}");
+        }
+    }
 
     let http_router = app_router(
         state.clone(),

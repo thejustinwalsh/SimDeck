@@ -31,6 +31,7 @@ tower-http = { version = "0.6", features = ["cors", "fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 webrtc = "0.12"
+wtransport = { version = "0.7.2", features = ["self-signed"] }
 
 [build-dependencies]
 cc = "1.2"

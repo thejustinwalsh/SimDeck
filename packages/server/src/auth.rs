@@ -240,6 +240,10 @@ fn origin_is_allowed(config: &Config, origin: &str) -> bool {
         || extra_allowed_origins().any(|value| value == "*" || value == origin)
 }
 
+pub fn origin_is_allowed_for_webtransport(config: &Config, origin: &str) -> bool {
+    origin_is_allowed(config, origin)
+}
+
 fn origin_is_cors_allowed(config: &Config, origin: &str) -> bool {
     origin == "null" || origin_is_allowed(config, origin)
 }

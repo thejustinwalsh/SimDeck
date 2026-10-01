@@ -406,6 +406,7 @@ const STREAM_ENCODERS: Array<{ label: string; value: StreamEncoder }> = [
 const STREAM_TRANSPORTS: Array<{ label: string; value: StreamTransport }> = [
   { label: "Auto", value: "auto" },
   { label: "WebRTC", value: "webrtc" },
+  { label: "WebTransport (experimental)", value: "webtransport" },
 ];
 
 const LOCAL_STREAM_FPS_OPTIONS: Array<{ label: string; value: StreamFps }> = [

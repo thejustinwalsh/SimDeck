@@ -11,7 +11,7 @@ export interface StreamConnectTarget {
 
 export type StreamEncoder = "auto" | "hardware" | "software";
 export type StreamFps = number;
-export type StreamTransport = "auto" | "webrtc";
+export type StreamTransport = "auto" | "webrtc" | "webtransport";
 export type StreamQualityPreset =
   | "auto"
   | "balanced"

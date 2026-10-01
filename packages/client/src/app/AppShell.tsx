@@ -167,7 +167,11 @@ const STREAM_ENCODER_VALUES = new Set<StreamEncoder>([
   "hardware",
   "software",
 ]);
-const STREAM_TRANSPORT_VALUES = new Set<StreamTransport>(["auto", "webrtc"]);
+const STREAM_TRANSPORT_VALUES = new Set<StreamTransport>([
+  "auto",
+  "webrtc",
+  "webtransport",
+]);
 const MOBILE_VIEWPORT_MEDIA_QUERY = "(max-width: 600px)";
 const CHROME_RENDERER_ASSET_VERSION = "chrome-renderer-button-overlay-23";
 clearLegacyVolatileUiState();

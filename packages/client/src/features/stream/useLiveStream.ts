@@ -531,7 +531,7 @@ export function useLiveStream({
     runtimeInfo,
     stats,
     status,
-    streamBackend: "webrtc",
+    streamBackend: streamTransport === "webtransport" ? "webtransport" : "webrtc",
     streamCanvasKey: `stream-${streamCanvasRevision}`,
   };
 }

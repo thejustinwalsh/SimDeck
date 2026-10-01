@@ -861,6 +861,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/simulators/{udid}/control", get(control_socket))
         .route("/api/simulators/{udid}/input", get(control_socket))
         .route("/api/simulators/{udid}/h264", get(removed_h264_stream))
+        .route(
+            "/api/simulators/{udid}/webtransport",
+            post(webtransport_bootstrap),
+        )
         .route("/api/simulators/{udid}/webrtc/offer", post(webrtc_offer))
         .route("/api/simulators/{udid}/chrome-profile", get(chrome_profile))
         .route("/api/simulators/{udid}/chrome.png", get(chrome_png))
@@ -928,11 +932,13 @@ async fn require_api_auth(
         .map(|ConnectInfo(address)| address.ip().is_loopback())
         .unwrap_or(false);
 
+    let requires_explicit_auth = request.uri().path().ends_with("/webtransport");
+
     if !auth::api_request_authorized(
         &state.config,
         request.method(),
         request.headers(),
-        peer_is_loopback,
+        peer_is_loopback && !requires_explicit_auth,
         request.uri().query(),
     ) {
         return auth::unauthorized_response(&state.config, request.headers());
@@ -2927,6 +2933,16 @@ async fn webrtc_offer(
     crate::transport::webrtc::create_answer(state, udid, payload, address.ip().is_loopback())
         .await
         .map(Json)
+}
+
+async fn webtransport_bootstrap(
+    State(state): State<AppState>,
+    Path(udid): Path<String>,
+    headers: HeaderMap,
+) -> Result<Json<crate::transport::webtransport::BootstrapResponse>, AppError> {
+    crate::transport::webtransport::bootstrap(&state, &udid, &headers)
+        .map(Json)
+        .map_err(|error| AppError::native(error.to_string()))
 }
 
 async fn handle_control_socket(state: AppState, udid: String, socket: WebSocket) {

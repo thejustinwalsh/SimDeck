@@ -14,6 +14,7 @@ import type {
   StreamTransport,
   WorkerToMainMessage,
 } from "./streamTypes";
+import { WebTransportStreamClient } from "./webTransportClient";
 
 const HAVE_CURRENT_DATA = 2;
 const WEBRTC_CONTROL_CHANNEL_LABEL = "simdeck-control";
@@ -34,7 +35,7 @@ let activeWebRtcTelemetryChannel: RTCDataChannel | null = null;
 let activeInputSocket: WebSocket | null = null;
 let activeStreamClient: StreamWorkerClient | null = null;
 
-export type StreamBackend = "webrtc";
+export type StreamBackend = "webrtc" | "webtransport";
 
 export function sendWebRtcControlMessage(
   encoded: string,
@@ -1748,10 +1749,13 @@ export class StreamWorkerClient {
       return;
     }
     this.backend?.destroy();
-    this.backend = new WebRtcStreamClient(this.handleBackendMessage);
+    const backend = kind === "webtransport"
+      ? new WebTransportStreamClient(this.handleBackendMessage)
+      : new WebRtcStreamClient(this.handleBackendMessage);
+    this.backend = backend;
     this.backendKind = kind;
     if (this.canvasElement) {
-      this.backend.attachCanvas(this.canvasElement);
+      backend.attachCanvas(this.canvasElement);
     }
   }
 
@@ -1766,13 +1770,16 @@ export function preferredStreamBackend(
   const value =
     target?.transport ??
     new URLSearchParams(window.location.search).get("stream");
-  return value === "webrtc" ? "webrtc" : "auto";
+  return value === "webrtc" || value === "webtransport" ? value : "auto";
 }
 
 export function initialStreamBackend(
   target: StreamConnectTarget,
 ): StreamBackend {
   const preferredBackend = preferredStreamBackend(target);
+  if (preferredBackend === "webtransport") {
+    return "webtransport";
+  }
   if (preferredBackend === "webrtc") {
     return "webrtc";
   }
